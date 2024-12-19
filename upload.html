@@ -91,7 +91,7 @@
         <label for="videoThumbnail">Upload Thumbnail (Optional):</label>
         <input type="file" id="videoThumbnail" accept="image/*">
         
-        <button type="submit">CLICKER MATRIX</button>
+        <button type="submit">Upload Video</button>
     </form>
 
     <h2>Uploaded Videos</h2>
@@ -116,7 +116,7 @@
         const uploadForm = document.getElementById('uploadForm');
         const videosList = document.getElementById('videosList');
 
-        // Load existing videos
+        // Fetch existing videos from Firebase on page load
         document.addEventListener('DOMContentLoaded', fetchVideos);
 
         uploadForm.addEventListener('submit', async (event) => {
@@ -153,6 +153,7 @@
         async function fetchVideos() {
             const snapshot = await firebase.database().ref('videos').once('value');
             const videos = snapshot.val();
+            videosList.innerHTML = ''; // Clear list before adding items
             if (videos) {
                 Object.values(videos).forEach(displayVideo);
             }
@@ -161,8 +162,8 @@
         async function uploadVideo(video) {
             const newVideoRef = firebase.database().ref('videos').push();
             await newVideoRef.set(video);
-            displayVideo(video);
             alert('Video uploaded successfully!');
+            fetchVideos(); // Refresh video list after upload
             uploadForm.reset();
         }
 
