@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Global Video Uploads</title>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js"></script>
     <style>
         body {
             background-color: black;
@@ -96,9 +98,25 @@
     <div class="videos-list" id="videosList"></div>
 
     <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCeBQBMcdVcbf2uhe8QbShUmIMkMJOOoy8",
+            authDomain: "onlineclass-f5622.firebaseapp.com",
+            databaseURL: "https://onlineclass-f5622-default-rtdb.firebaseio.com",
+            projectId: "onlineclass-f5622",
+            storageBucket: "onlineclass-f5622.appspot.com",
+            messagingSenderId: "638448145198",
+            appId: "1:638448145198:android:186637602b14b43900e0bf"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
         const uploadForm = document.getElementById('uploadForm');
         const videosList = document.getElementById('videosList');
 
+        // Load existing videos
         document.addEventListener('DOMContentLoaded', fetchVideos);
 
         uploadForm.addEventListener('submit', async (event) => {
@@ -133,25 +151,19 @@
         });
 
         async function fetchVideos() {
-            const response = await fetch('http://localhost:5000/videos');
-            const videos = await response.json();
-            videos.forEach(displayVideo);
+            const snapshot = await firebase.database().ref('videos').once('value');
+            const videos = snapshot.val();
+            if (videos) {
+                Object.values(videos).forEach(displayVideo);
+            }
         }
 
         async function uploadVideo(video) {
-            const response = await fetch('http://localhost:5000/videos', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(video)
-            });
-            if (response.ok) {
-                const newVideo = await response.json();
-                displayVideo(newVideo);
-                alert('Video uploaded successfully!');
-                uploadForm.reset();
-            } else {
-                alert('Error uploading video. Please try again.');
-            }
+            const newVideoRef = firebase.database().ref('videos').push();
+            await newVideoRef.set(video);
+            displayVideo(video);
+            alert('Video uploaded successfully!');
+            uploadForm.reset();
         }
 
         function isYouTubeURL(url) {
