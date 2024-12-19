@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Permanent YouTube Video Uploads</title>
+    <title>Global Video Uploads</title>
     <style>
         body {
             background-color: black;
@@ -99,10 +99,9 @@
         const uploadForm = document.getElementById('uploadForm');
         const videosList = document.getElementById('videosList');
 
-        // Load existing videos from localStorage
-        document.addEventListener('DOMContentLoaded', loadVideos);
+        document.addEventListener('DOMContentLoaded', fetchVideos);
 
-        uploadForm.addEventListener('submit', (event) => {
+        uploadForm.addEventListener('submit', async (event) => {
             event.preventDefault();
 
             const password = document.getElementById('password').value.trim();
@@ -120,20 +119,40 @@
 
             if (thumbnailFile) {
                 const reader = new FileReader();
-
-                reader.onload = function () {
+                reader.onload = async () => {
                     thumbnailURL = reader.result;
-                    saveAndDisplayVideo({ title, description, url, thumbnail: thumbnailURL });
+                    await uploadVideo({ title, description, url, thumbnail: thumbnailURL });
                 };
-
                 reader.readAsDataURL(thumbnailFile);
             } else if (isYouTubeURL(url)) {
                 thumbnailURL = generateYouTubeThumbnail(url);
-                saveAndDisplayVideo({ title, description, url, thumbnail: thumbnailURL });
+                await uploadVideo({ title, description, url, thumbnail: thumbnailURL });
             } else {
                 alert('Please provide a valid YouTube URL or upload a thumbnail.');
             }
         });
+
+        async function fetchVideos() {
+            const response = await fetch('http://localhost:5000/videos');
+            const videos = await response.json();
+            videos.forEach(displayVideo);
+        }
+
+        async function uploadVideo(video) {
+            const response = await fetch('http://localhost:5000/videos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(video)
+            });
+            if (response.ok) {
+                const newVideo = await response.json();
+                displayVideo(newVideo);
+                alert('Video uploaded successfully!');
+                uploadForm.reset();
+            } else {
+                alert('Error uploading video. Please try again.');
+            }
+        }
 
         function isYouTubeURL(url) {
             const regex = /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/;
@@ -143,20 +162,6 @@
         function generateYouTubeThumbnail(url) {
             const videoID = url.split('v=')[1]?.split('&')[0];
             return `https://img.youtube.com/vi/${videoID}/hqdefault.jpg`;
-        }
-
-        function saveAndDisplayVideo(video) {
-            const videos = JSON.parse(localStorage.getItem('uploadedVideos')) || [];
-            videos.push(video);
-            localStorage.setItem('uploadedVideos', JSON.stringify(videos));
-            displayVideo(video);
-            alert('Video uploaded successfully!');
-            uploadForm.reset();
-        }
-
-        function loadVideos() {
-            const videos = JSON.parse(localStorage.getItem('uploadedVideos')) || [];
-            videos.forEach(displayVideo);
         }
 
         function displayVideo(video) {
